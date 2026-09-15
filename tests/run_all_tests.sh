@@ -2,11 +2,12 @@
 # ============================================================
 # 一键验证脚本（thttpd + sqlite/cJSON + 共享内存读写锁 + POSIX消息队列
 #              + modbus采集 + REST接口 + ModbusGateway前端静态托管）
-# 用法：cd /home/hq/network/lianxi && bash tools/run_all_tests.sh
+# 用法：cd ~/network/lianxi && bash tests/run_all_tests.sh   （tests/ 目录里，工程根也能跑）
 # ============================================================
 P=$(cd "$(dirname "$0")/.." && pwd)
 cd $P
-T=$P/tools
+T=$(cd "$(dirname "$0")" && pwd)      # 本脚本所在目录 = tests/
+TOOLS=$P/tools                        # tools/（从机模拟器等）
 
 cleanup() {
     ./collector.out --stop             >/dev/null 2>&1   # 采集守护进程（如果有）
@@ -28,7 +29,7 @@ echo "编译通过：thttpd.out / collector.out"
 echo
 echo "############ 2/8 数据库层自测（SHA-256/注册/登录/历史/日志） ############"
 BIN=$T/.db_selftest.bin
-gcc -Wall -g -I. -o $BIN $T/db_selftest.c src/db/db.c -lsqlite3 -lcjson || exit 1
+gcc -Wall -g -I. -Isrc -o $BIN $T/db_selftest.c src/db/db.c -lsqlite3 -lcjson || exit 1
 rm -f selftest.db
 $BIN || echo "(有 FAIL，看上面输出)"
 rm -f selftest.db $BIN
@@ -48,7 +49,7 @@ else:
     con.commit(); con.close()
     print('  sensor.db 已存在，跳过初始化（只补建 logs 表）')
 "
-nohup python3 $T/modbus_slave.py > /tmp/slave.log 2>&1 &
+nohup python3 $TOOLS/modbus_slave.py > /tmp/slave.log 2>&1 &
 sleep 1.2
 stdbuf -o0 ./collector.out > /tmp/collector.log 2>&1 &
 sleep 2.5

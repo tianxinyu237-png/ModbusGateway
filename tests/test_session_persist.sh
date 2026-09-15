@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # 会话持久化测试：登录拿到 token → 重启 web 服务 → 旧 token 依然可用 → 退出后失效
-# 用法： bash tools/test_session_persist.sh   （web 服务需已在 8080 运行）
+# 用法： bash tests/test_session_persist.sh   （web 服务需已在 8080 运行）
 # ============================================================
 P=$(cd "$(dirname "$0")/.." && pwd)
 cd $P

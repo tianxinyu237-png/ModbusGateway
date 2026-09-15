@@ -1,9 +1,10 @@
 // db.c 功能自测：init.sql建表 / SHA-256 / 注册 / 登录 / 插记录 / 按跨度查历史 / 日志
-// 编译： gcc -Wall -g -I. -o tools/.db_selftest.bin tools/db_selftest.c src/db/db.c -lsqlite3 -lcjson
+// 编译： gcc -Wall -g -I. -Isrc -o tests/.db_selftest.bin tests/db_selftest.c src/db/db.c -lsqlite3 -lcjson
+// （在工程根目录执行；tests/run_all_tests.sh 会自动做这一步）
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "src/db/db.h"
+#include "db/db.h"
 
 static int pass = 0, fail = 0;
 #define CHECK(cond, msg) do{ \

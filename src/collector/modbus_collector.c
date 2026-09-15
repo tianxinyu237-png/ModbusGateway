@@ -41,9 +41,9 @@
 #include <sys/wait.h>
 #include <syslog.h>
 #include <modbus.h>          // 本机 libmodbus 头文件装在 /usr/include/modbus.h
-#include "src/ipc/shm.h"
-#include "src/ipc/mq.h"
-#include "src/db/db.h"
+#include "ipc/shm.h"
+#include "ipc/mq.h"
+#include "db/db.h"
 
 #define SYSLOG_IDENT      "modbus-collector"
 #define CONF_FILE         "collector.conf"   // 默认配置文件（相对启动目录）

@@ -24,9 +24,9 @@
 #include <unistd.h>
 #include <cjson/cJSON.h>
 #include "api_rest.h"
-#include "src/ipc/shm.h"     // 读/写共享内存
-#include "src/ipc/mq.h"      // 往消息队列下发指令
-#include "src/db/db.h"       // 用户/历史/日志
+#include "ipc/shm.h"     // 读/写共享内存
+#include "ipc/mq.h"      // 往消息队列下发指令
+#include "db/db.h"       // 用户/历史/日志
 
 static sqlite3 *g_db = NULL;
 sqlite3 *web_get_db(void)

@@ -1,31 +1,42 @@
 # ==========================================================================
-# ModbusGateway —— 温湿度采集监控平台
-#   make            编译全部（thttpd.out 网页服务 / collector.out 采集进程）
-#   make test       一键跑全部自动化测试
-#   make daemon     后台守护方式启动采集进程（异常自动拉起）
-#   make stop       停止采集守护进程
-#   make status     查看采集进程状态
-#   make init-db    用 db/init.sql 重建数据库（会清空历史数据！）
-#   make clean      清理编译产物
+# ModbusGateway —— 工业物联网温湿度采集监控平台
+#
+#   目录约定：
+#     src/       C 源码（http 层 / ipc / db / collector）
+#     tests/     自动化测试（121 项断言，入口 tests/run_all_tests.sh）
+#     tools/     运行与调试工具（从机模拟器、一键启停、数据库清理）
+#     docs/      接口契约与开发手册
+#     db/        建表脚本        wwwroot/  静态资源根（app/ 是前端）
+#
+#   常用命令：
+#     make            编译 thttpd.out（web 服务） + collector.out（采集进程）
+#     make up         一键后台起全部服务（从机模拟器 + 采集守护 + web）
+#     make down       一键停全部服务
+#     make test       跑全部自动化测试（121 项）
+#     make status     看采集进程状态
+#     make clean      清编译产物与运行日志
+#     make init-db    用 db/init.sql 重建数据库（会清空历史数据！）
 # ==========================================================================
 
 CC      = gcc
-CFLAGS  = -Wall -Wextra -g -I.
+CFLAGS  = -Wall -Wextra -g -I. -Isrc
 LDFLAGS = -lpthread -lmodbus -lsqlite3 -lcjson -lrt
 
 DB      = sensor.db
 PORT    = 8080
 
 # ---------- 源文件 ----------
-WEB_SRC = main.c thttpd.c custom_handle.c api_rest.c \
-          src/ipc/shm.c src/ipc/mq.c src/db/db.c
-COL_SRC = src/collector/modbus_collector.c \
-          src/ipc/shm.c src/ipc/mq.c src/db/db.c
+HTTP_SRC = src/http/thttpd.c src/http/custom_handle.c src/http/api_rest.c
+IPC_SRC  = src/ipc/shm.c src/ipc/mq.c
+DB_SRC   = src/db/db.c
+
+WEB_SRC = src/main.c $(HTTP_SRC) $(IPC_SRC) $(DB_SRC)
+COL_SRC = src/collector/modbus_collector.c $(IPC_SRC) $(DB_SRC)
 
 # ---------- 编译 ----------
 all: thttpd.out collector.out
 
-# web服务器（手写HTTP解析 + REST接口 + 静态托管）
+# web 服务器（手写HTTP解析 + REST接口 + 静态托管）
 thttpd.out: $(WEB_SRC)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -51,7 +62,7 @@ stop: collector.out
 status: collector.out
 	./collector.out --status
 
-# 一键起/停全部（从机模拟器 + 采集守护进程 + web，都在后台，不占终端）
+# 一键起/停全部（从机模拟器 + 采集守护 + web，都在后台，不占终端）
 up: all
 	bash tools/start_all.sh $(PORT)
 
@@ -60,7 +71,7 @@ down:
 
 # ---------- 测试 ----------
 test: thttpd.out collector.out
-	bash tools/run_all_tests.sh
+	bash tests/run_all_tests.sh
 
 # ---------- 数据库 ----------
 init-db:
@@ -76,8 +87,8 @@ db-stats:
 # ---------- 清理 ----------
 clean:
 	rm -f *.out
-	rm -rf run logs tools/__pycache__
-	rm -f selftest.db selftest.db-shm selftest.db-wal tools/.db_selftest.bin
+	rm -rf run logs tests/__pycache__ tools/__pycache__
+	rm -f selftest.db selftest.db-shm selftest.db-wal tests/.db_selftest.bin
 
 # 连数据库和日志一起清（谨慎）
 distclean: clean

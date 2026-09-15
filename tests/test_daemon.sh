@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # 采集守护进程测试：启动 → 状态 → 杀死子进程看是否自动拉起 → 停止
-# 用法： cd ~/network/lianxi && bash tools/test_daemon.sh
+# 用法： cd ~/network/lianxi && bash tests/test_daemon.sh
 # ============================================================
 P=$(cd "$(dirname "$0")/.." && pwd)
 cd $P

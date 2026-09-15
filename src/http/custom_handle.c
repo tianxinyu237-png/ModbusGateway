@@ -18,9 +18,9 @@
 #include <unistd.h>
 #include "custom_handle.h"   // 头文件，对外声明parse_and_process函数，供thttpd.c调用
 #include "api_rest.h"        // RESTful 接口层（/api/xxx，实现在 api_rest.c）
-#include "src/ipc/shm.h"     // 读采集进程写进共享内存的实时温湿度（读写锁）
-#include "src/ipc/mq.h"      // 往消息队列下发指令给采集进程
-#include "src/db/db.h"       // 历史/日志查询
+#include "ipc/shm.h"     // 读采集进程写进共享内存的实时温湿度（读写锁）
+#include "ipc/mq.h"      // 往消息队列下发指令给采集进程
+#include "db/db.h"       // 历史/日志查询
 
 #define KB 1024
 #define HTML_SIZE (64 * KB)     // 64KB 响应缓冲区大小

@@ -38,25 +38,55 @@
 
 ```
 lianxi/
-├── main.c                     程序入口（accept 循环 + 每连接一个线程）
-├── thttpd.c / thttpd.h        手写HTTP服务器（解析、路由、静态文件、错误页）
-├── custom_handle.c/.h         业务层：表单登录/求和、老接口、请求分发
-├── api_rest.c / api_rest.h    RESTful 接口层（前端用的 8 个接口 + token 会话）
-├── src/ipc/shm.c/.h           共享内存（进程间读写锁 + 结构体版本校验）
-├── src/ipc/mq.c/.h            POSIX 消息队列（指令下发）
-├── src/db/db.c/.h             SQLite 封装（用户/历史/日志 + 纯C SHA-256）
-├── src/collector/
-│   └── modbus_collector.c     采集进程（守护模式 + 异常自愈 + syslog）
-├── db/init.sql                建表脚本（users / sensor_data / logs）
-├── wwwroot/                   静态资源根目录
-│   ├── app/                   ModbusGateway 前端（登录页 + 数据看板）
-│   ├── realtime.html          早期实时监控页（用 /api?cmd= 老接口）
-│   └── index.html login.html post.html 404.html ...  教学页面
-├── tools/                     测试与调试工具（可删）
-└── Makefile
+├── src/                            C 源码（全部按层分目录）
+│   ├── main.c                      程序入口（accept 循环 + 每连接一个线程）
+│   ├── http/                       手写 HTTP 服务器 + 业务层
+│   │   ├── thttpd.c/.h             解析、路由、静态文件、错误页
+│   │   ├── custom_handle.c/.h      业务分发：表单登录/求和、老接口 /api?cmd=
+│   │   └── api_rest.c/.h           RESTful 接口层（前端用的 8 个接口 + token 会话）
+│   ├── ipc/shm.c/.h                共享内存（进程间读写锁 + 结构体版本校验）
+│   ├── ipc/mq.c/.h                 POSIX 消息队列（指令下发）
+│   ├── db/db.c/.h                  SQLite 封装（用户/历史/日志 + 纯C SHA-256）
+│   └── collector/modbus_collector.c 采集进程（守护模式 + 异常自愈 + syslog）
+├── tests/                          自动化测试（121 项断言，见第六节）
+│   ├── run_all_tests.sh            一键全流程（8 个阶段）
+│   ├── db_selftest.c               数据库层 36 项
+│   ├── tests_api_rest.py           REST 接口 34 项
+│   ├── tests_web.py                HTTP 运行时 27 项
+│   ├── test_api.py                 老接口 + IPC 集成 8 项
+│   ├── test_daemon.sh              采集守护进程 11 项
+│   └── test_session_persist.sh     会话持久化 5 项
+├── tools/                          运行与调试工具
+│   ├── modbus_slave.py             Modbus TCP 从机模拟器（纯标准库）
+│   ├── start_all.sh / stop_all.sh  一键起停全部服务（make up / make down）
+│   ├── clean_db.sh                 清理测试数据（make clean-db）
+│   └── mock_server.py              Python 版模拟后端（前端 MOCK 联调用，非必需）
+├── docs/
+│   ├── API.md                      接口契约（REST 8 接口 + 老接口 + 错误码 + IPC 指令码）
+│   └── GUIDE.md                    开发运维手册（启动排错/工具用法/环境依赖/配置项）
+├── db/init.sql                     建表脚本（users / sensor_data / logs / sessions）
+├── wwwroot/                        静态资源根
+│   ├── app/                        ModbusGateway 前端（登录页 + 数据看板）
+│   ├── realtime.html               早期实时监控页（用 /api?cmd= 老接口）
+│   └── index.html login.html post.html 404.html   教学页面
+├── collector.conf                  采集设备配置（接真实设备只改这里）
+├── Makefile                        编译 / 运行 / 测试 / 清理入口
+├── .gitignore                      生成物清单（编译产物、sensor.db、logs/、run/）
+└── README.md
 ```
 
-## 三、编译与运行
+编译产物（`thttpd.out`、`collector.out`）和运行时数据（`sensor.db*`、`logs/`、`run/`）都生成在工程根，
+已经在 `.gitignore` 里列出，不要手动删 `logs/`（服务在跑时删掉它会让日志写不进去）。
+
+## 三、文档索引
+
+| 文件 | 内容 |
+|---|---|
+| `README.md`（本文） | 架构、目录、编译运行、技术栈、已知限制 |
+| `docs/API.md` | 全部接口契约：REST 8 个接口 + 老接口 + 错误码 + 消息队列指令码 |
+| `docs/GUIDE.md` | 开发运维手册：启动/排错、测试工具用法、环境依赖、collector.conf 全表 |
+
+## 四、编译与运行
 
 ```bash
 make                 # 编译出 thttpd.out 和 collector.out
@@ -79,9 +109,11 @@ python3 tools/modbus_slave.py &
 #   早期监控页: http://<IP>:8080/realtime.html
 ```
 
-一键跑全部自动化测试：`make test`（96+ 项断言）
+一键起停全部服务：`make up` / `make down`（后台跑，不占终端）；一键跑全部自动化测试：`make test`（121 项断言）
 
-## 四、接口清单
+## 五、接口清单
+
+> 完整契约（错误码、指令参数、老接口、消息队列指令码）见 **`docs/API.md`**。
 
 ### RESTful（前端用，统一响应 `{"code":0,"message":"ok","data":{...}}`）
 除注册/登录外都需要请求头 `Authorization: Bearer <token>`，否则返回 HTTP 401。
@@ -112,7 +144,7 @@ python3 tools/modbus_slave.py &
 ### 教学接口
 `POST /login`（表单登录返回跳转JS）、`POST /add`（`"data1=1data2=2"` 求和）
 
-## 五、数据库表
+## 六、数据库表
 
 | 表 | 用途 | 关键字段 |
 |---|---|---|
@@ -120,7 +152,7 @@ python3 tools/modbus_slave.py &
 | users | 用户 | username(唯一), password_hash(`salt$sha256(salt+password)`), created_at |
 | logs | 分级日志 | time, level(DEBUG/INFO/WARN/ERROR), module, message |
 
-## 六、IPC 约定
+## 七、IPC 约定
 
 共享内存 `shm_sensor_data_t`（`src/ipc/shm.h`）：实时值 + 运行统计 + `pthread_rwlock_t` 进程间读写锁 +
 `SHM_MAGIC` 版本校验。采集进程持写锁更新，web 端持读锁拷贝；两边锁都带超时，拿不到就报错，不会死锁。
@@ -134,7 +166,7 @@ python3 tools/modbus_slave.py &
 | CMD_SET_THRESHOLD (3) | 阈值×100（3250 → 32.5℃） |
 | CMD_RESTART (4) | 无 |
 
-## 七、对接真实设备（只改配置，不改代码、不用重编译）
+## 八、对接真实设备（只改配置，不改代码、不用重编译）
 
 设备参数全在 `collector.conf` 里，命令行参数可以覆盖它。查看当前生效配置：
 
@@ -159,24 +191,11 @@ python3 tools/modbus_slave.py &
 ./collector.out --transport rtu --serial /dev/ttyUSB0 --baud 9600 --slave 1 --real --daemon
 ```
 
-`collector.conf` 主要配置项：
+`collector.conf` 的主要配置项（`transport / host / port / slave / serial / baud / reg_temp / reg_humi /
+scale_temp / scale_humi / interval_ms / threshold / source_name / source_simulated`）**完整表见
+`docs/GUIDE.md` 第五节**。
 
-| 配置项 | 含义 | 默认 |
-|---|---|---|
-| transport | tcp / rtu | tcp |
-| host / port | 设备 IP 与端口（标准 Modbus TCP 是 502） | 127.0.0.1 / 5020 |
-| slave | 从机地址（设备手册的站号） | 1 |
-| serial / baud / parity | RTU 串口参数 | /dev/ttyUSB0 / 9600 / N |
-| reg_temp / reg_humi | 温度、湿度寄存器地址 | 0 / 1 |
-| scale_temp / scale_humi | 真实值 = 寄存器原始值 ÷ 该值 | 10 / 10 |
-| interval_ms / threshold | 采集周期 / 温度告警阈值 | 2000 / 32.0 |
-| source_name / source_simulated | 数据来源标记（显示在网页、`--status`、日志里） | modbus-simulator / 1 |
-
-> **数据来源标记**：默认连的是本机 Modbus 模拟器，所以 `source_simulated=1`，
-> 网页顶部会显示一条橙色提示"这是模拟数据，不是真实传感器"，`--status` 和日志里也会写明。
-> 接上真实设备后设成 `0`，提示自动消失，界面显示"真实设备"。
-
-## 八、技术栈
+## 九、技术栈
 
 **语言/标准**：C（C99/GNU11）、POSIX API、HTML5 + 原生 JavaScript（ES5）+ CSS3
 
@@ -198,10 +217,10 @@ RESTful 接口设计、Modbus TCP（libmodbus 客户端）
 **工具链**：GCC 7.5 + GNU Make（`-Wall -Wextra` 零警告）、Python3（联调模拟后端 + 测试脚本，
 只用标准库 urllib/socket/sqlite3/json）、Ubuntu 18.04（glibc 2.27）
 
-**测试**：96+ 项自动化断言（数据库层 27、REST 34、IPC 集成 8、HTTP 运行时 27），
-外加 SHA-256 官方向量校验、Modbus 从机模拟器
+**测试**：121 项自动化断言、0 warning（数据库层 36、REST 34、会话持久化 5、老接口+IPC 8、
+HTTP 运行时 27、采集守护进程 11），外加 SHA-256 官方向量校验与 Modbus 从机模拟器，入口 `tests/run_all_tests.sh`
 
-## 八、已知限制 / 后续可做
+## 十、已知限制 / 后续可做
 
 - web 服务器是"每连接一线程"，未做 epoll 事件驱动（架构图里的 reactor 属下一阶段）
 - 采集守护进程只做"崩溃拉起"，没有独立的看门狗进程与邮件/钉钉告警
