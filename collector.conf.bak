@@ -9,8 +9,8 @@
 
 # ---------------- 设备连接 ----------------
 transport = tcp            # tcp（网口/网关） 或 rtu（RS485串口）
-host      = 192.168.142.1      # 设备IP；接真实设备改成设备/网关的IP
-port      = 502           # 端口；标准 Modbus TCP 通常是 502，本机模拟器用 5020
+host      = 127.0.0.1      # 设备IP；接真实设备改成设备/网关的IP
+port      = 5020           # 端口；标准 Modbus TCP 通常是 502，本机模拟器用 5020
 slave     = 1              # 从机地址（设备手册里的 Slave ID / 站号）
 
 # RTU（串口）设备才需要下面几项
@@ -35,5 +35,5 @@ threshold   = 32.0         # 温度告警阈值（℃），超过则设备状态
 # ---------------- 数据来源标记（只影响界面/日志显示，不影响数据） ----------------
 # 现在连的是本机 Modbus 模拟器（tools/modbus_slave.py），所以标记为模拟数据。
 # 接上真实设备后，把 source_simulated 改成 0，并写上设备名，网页上就会显示"真实设备"。
-source_name      = ModbusSlave-主机设备
-source_simulated = 0       # 1=模拟数据(测试用)   0=真实设备
+source_name      = modbus-simulator
+source_simulated = 1       # 1=模拟数据(测试用)   0=真实设备
