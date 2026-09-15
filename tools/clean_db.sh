@@ -8,7 +8,7 @@
 #     bash tools/clean_db.sh --history    清空采集历史（图表会从零开始长）
 #     bash tools/clean_db.sh --all        用户+日志+历史 全清（保留 admin 账号）
 #     bash tools/clean_db.sh --stats      只看各表行数，不动数据
-#   注意：清理前会自动备份成 sensor.db.bak_时间戳
+#   注意：清理前会自动备份到 ~/backups_lianxi/db_backups/（不堆在工程目录里）
 # ============================================================
 P=$(cd "$(dirname "$0")/.." && pwd)
 cd $P
@@ -55,7 +55,10 @@ if fs:
             print("    ", r)
     con.close(); sys.exit(0)
 
-bak = "%s.bak_%s" % (db, time.strftime("%Y%m%d_%H%M%S"))
+BAK_DIR = os.path.expanduser("~/backups_lianxi/db_backups")
+if not os.path.isdir(BAK_DIR):
+    os.makedirs(BAK_DIR)
+bak = os.path.join(BAK_DIR, "%s.bak_%s" % (os.path.basename(db), time.strftime("%Y%m%d_%H%M%S")))
 shutil.copyfile(db, bak)
 print("\n已备份: %s" % bak)
 

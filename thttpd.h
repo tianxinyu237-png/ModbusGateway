@@ -19,9 +19,6 @@
 #include <syslog.h>
 
 
-#define NORMAL  0
-#define WRONING 1
-#define FATAL   2
 #define SIZE 4096
 
 int init_server(int _port);

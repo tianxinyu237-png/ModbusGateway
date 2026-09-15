@@ -25,10 +25,6 @@
 #define KB 1024
 #define HTML_SIZE (64 * KB)     // 64KB 响应缓冲区大小
 
-//普通的文本回复需要增加http响应头部（本项目代码里该宏定义已声明，但暂时没有使用）
-#define HTML_HEAD "Content-Type: text/html\r\n" \
-                   "Connection: close\r\n"
-
 /* ============================================================================
    一、老的业务接口（登录 / 求和）—— 路径 /login、/add，POST表单
    ============================================================================ */
@@ -185,7 +181,7 @@ static int handle_history_raw(int sock, const char *params)
 }
 
 /* ============================================================================
-   四、总入口：由 thttpd.c 的 handle_request 调用
+   三、总入口：由 thttpd.c 的 handle_request 调用
    ============================================================================ */
 int parse_and_process(int sock, const char *url, const char *query_string,
                       const char *input, const char *auth)

@@ -1,0 +1,30 @@
+# ============================================================
+# 生成物 / 运行时数据 —— 不要提交，也不要手动删（删了会重新生成）
+# ============================================================
+
+# 编译产物（make 生成）
+*.out
+*.o
+*.d
+
+# SQLite 运行时数据（sensor.db 是采集数据，按需保留）
+sensor.db
+sensor.db-shm
+sensor.db-wal
+sensor.db.bak_*
+selftest.db
+selftest.db-shm
+selftest.db-wal
+
+# 运行日志与 pid 文件（make clean 会删掉这两个目录）
+logs/
+run/
+
+# 测试中间产物
+tools/__pycache__/
+tools/.db_selftest.bin
+
+# 编辑器
+.vscode/
+*.swp
+*~
