@@ -60,7 +60,7 @@
 
     return fetch(url, cfg).then(function (res) {
       if (res.status === 401) {
-        // token 失效（常见原因：webserver 重启过，会话是存在进程内存里的，重启就没了）
+        // token 失效（会话存在数据库 sessions 表里，TTL 2 小时；过期或退出登录后就会 401）
         // 清掉本地登录态并回登录页，带上 expired 标记让登录页给出提示
         Session.clear();
         location.href = 'index.html?expired=1';
