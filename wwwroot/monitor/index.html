@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · 高档住宅温湿度采集监控系统</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="auth">
+
+  <!-- ============ 左侧：品牌 / 系统架构说明 ============ -->
+  <aside class="brand-side">
+    <div class="brand-top">
+      <div class="brand-mark">⌂</div>
+      <div>
+        <div class="brand-name">高档住宅温湿度采集监控系统</div>
+        <div class="brand-sub">ModbusTcp · IPC · Web</div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <h1>住宅环境<br><em>实时采集与远程监控</em></h1>
+      <p>基于 ModbusTcp 与 Linux 进程间通信的温湿度采集、远程控制与 Web 实时展示系统。
+         打通「底层设备采集 → 进程间数据流转 → 数据库持久化 → 网页实时展示」完整链路。</p>
+
+      <div class="flow">
+        <div class="flow-node"><span class="ico">🖥</span><b>网页（前端）</b><small>浏览器</small></div>
+        <div class="flow-link"></div>
+        <div class="flow-node"><span class="ico">🌐</span><b>Web 服务器</b><small>HTTP · 鉴权 · 读写库</small></div>
+        <div class="flow-link"></div>
+        <div class="flow-node"><span class="ico">⚙</span><b>数据采集进程</b><small>MQ / 共享内存</small></div>
+        <div class="flow-link"></div>
+        <div class="flow-node"><span class="ico">📡</span><b>产品设备（从机）</b><small>ModbusTcp Slave</small></div>
+      </div>
+    </div>
+
+    <div class="brand-foot">
+      <span>用户管理</span><span>实时采集</span><span>数据展示</span>
+      <span>指示灯远程控制</span><span>日志记录</span>
+    </div>
+  </aside>
+
+  <!-- ============ 右侧：登录 / 注册 ============ -->
+  <section class="form-side">
+    <div class="card">
+      <h2 id="card-title">欢迎回来</h2>
+      <p class="hint" id="card-hint">请登录后进入温湿度数据看板</p>
+
+      <div class="tabs">
+        <button type="button" id="tab-login" class="on">登录</button>
+        <button type="button" id="tab-reg"   >注册</button>
+      </div>
+
+      <div class="msg" id="msg"></div>
+
+      <form id="form" autocomplete="off" novalidate>
+        <div class="field">
+          <label for="username">账号</label>
+          <div class="wrap">
+            <input type="text" id="username" placeholder="请输入账号" maxlength="32" autocomplete="username">
+          </div>
+          <div class="err" id="err-username"></div>
+        </div>
+
+        <div class="field">
+          <label for="password">密码</label>
+          <div class="wrap">
+            <input type="password" id="password" placeholder="请输入密码" maxlength="64" autocomplete="current-password">
+            <button type="button" class="eye" id="eye" title="显示 / 隐藏密码">👁</button>
+          </div>
+          <div class="err" id="err-password"></div>
+          <div class="strength" id="strength" style="display:none">
+            <i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+
+        <div class="field" id="field-confirm" style="display:none">
+          <label for="confirm">确认密码</label>
+          <div class="wrap">
+            <input type="password" id="confirm" placeholder="请再次输入密码" maxlength="64" autocomplete="new-password">
+          </div>
+          <div class="err" id="err-confirm"></div>
+        </div>
+
+        <div class="row-between">
+          <label class="check"><input type="checkbox" id="remember"> 记住我</label>
+          <span style="font-size:12px;color:var(--muted)" id="mode-tip"></span>
+        </div>
+
+        <button type="submit" class="btn" id="submit">
+          <span class="spin"></span><span id="submit-text">登 录</span>
+        </button>
+      </form>
+
+      <div class="card-foot">
+        演示账号 <code>admin</code> / <code>123456</code> ·
+        接口前缀 <code id="api-base-tip">/api</code>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

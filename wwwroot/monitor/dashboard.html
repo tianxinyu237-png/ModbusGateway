@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据看板 · 高档住宅温湿度采集监控系统</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- 顶部提示条：后端不可达自动降级 / 采集进程离线 -->
+  <div class="banner warn" id="banner">
+    <span id="banner-text">提示</span>
+    <button class="x" id="banner-x" title="关闭">×</button>
+  </div>
+
+  <!-- ============ 顶栏 ============ -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="mark">⌂</div>
+      <div>
+        <div class="t1">高档住宅温湿度采集监控系统</div>
+        <div class="t2">MODBUSTCP · IPC · WEB</div>
+      </div>
+    </div>
+
+    <div class="status-group">
+      <span class="pill"><span class="dot" id="dot-web"></span>Web 服务器</span>
+      <span class="pill"><span class="dot" id="dot-collect"></span>采集进程</span>
+      <span class="pill"><span class="dot" id="dot-modbus"></span>Modbus 从机</span>
+      <span class="pill" id="pill-src"><span class="dot" id="dot-src"></span>数据来源 —</span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <span class="clock" id="clock">--:--:--</span>
+
+    <div class="user-box">
+      <div class="avatar" id="avatar">U</div>
+      <div>
+        <span class="un" id="uname">--</span>
+        <span class="role" id="urole">--</span>
+      </div>
+      <button class="btn-sm" id="btn-logout">退出</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- ============ KPI ============ -->
+    <section class="kpi-row">
+      <div class="kpi temp" id="kpi-temp">
+        <div class="k-label">当前温度 <span class="tag" id="reg-temp">保持寄存器 0x0001</span></div>
+        <div class="k-value" id="k-temp">--<small>℃</small></div>
+        <div class="k-foot" id="k-temp-foot">等待采集数据…</div>
+      </div>
+      <div class="kpi humi" id="kpi-humi">
+        <div class="k-label">当前湿度 <span class="tag" id="reg-humi">保持寄存器 0x0002</span></div>
+        <div class="k-value" id="k-humi">--<small>%RH</small></div>
+        <div class="k-foot" id="k-humi-foot">等待采集数据…</div>
+      </div>
+      <div class="kpi peak">
+        <div class="k-label">本次运行温度极值</div>
+        <div class="k-value" id="k-peak">-- / --<small>℃</small></div>
+        <div class="k-foot">最高 / 最低</div>
+      </div>
+      <div class="kpi cnt">
+        <div class="k-label">采集点数 <span class="tag">已写入采集记录表</span></div>
+        <div class="k-value" id="k-count">0</div>
+        <div class="k-foot" id="k-count-foot">采集周期 -- ms</div>
+      </div>
+    </section>
+
+    <!-- ============ 实时曲线 + 设备控制 ============ -->
+    <div class="grid">
+
+      <!-- 实时曲线 -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>实时温湿度曲线</h3>
+          <span class="badge">共享内存 · 轮询</span>
+          <div class="spacer"></div>
+          <div class="toolbar">
+            <select id="poll-select" title="轮询间隔">
+              <option value="1000">1 秒</option>
+              <option value="2000" selected>2 秒</option>
+              <option value="5000">5 秒</option>
+              <option value="10000">10 秒</option>
+            </select>
+            <button class="btn-sm on" id="btn-pause">暂停</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="chart" id="chart-realtime"></div>
+          <div class="legend" style="margin-top:10px">
+            <span><i style="background:#fb923c"></i>温度 ℃</span>
+            <span><i style="background:#22d3ee"></i>湿度 %RH</span>
+            <span id="chart-tip" style="color:var(--faint)"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 设备控制 -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>设备控制</h3>
+          <span class="badge violet">消息队列下发</span>
+          <div class="spacer"></div>
+          <span class="badge amber" id="led-addr-tip">寄存器 0x0004</span>
+        </div>
+        <div class="panel-body">
+
+          <!-- 指示灯 -->
+          <div class="device">
+            <div class="lamp unknown" id="lamp"><i></i></div>
+            <div class="d-info">
+              <div class="d-state off" id="d-state">指示灯状态未知</div>
+              <div class="d-meta" id="d-meta">等待从机回读…</div>
+            </div>
+            <div class="d-actions">
+              <div class="switch-row">
+                <label class="switch">
+                  <input type="checkbox" id="led-switch">
+                  <span class="slider"></span>
+                </label>
+                <span class="switch-label" id="led-label">置位（点亮）</span>
+              </div>
+              <button class="btn-sm" id="btn-led-refresh">回读状态</button>
+            </div>
+          </div>
+
+          <!-- 采集参数 -->
+          <div class="param">
+            <label for="param-period">采集周期</label>
+            <input type="number" id="param-period" min="100" max="60000" step="100" placeholder="2000">
+            <span class="unit">ms</span>
+            <button class="btn-sm" id="btn-period">下发</button>
+          </div>
+          <div class="param">
+            <label for="param-threshold">温度告警阈值</label>
+            <input type="number" id="param-threshold" min="-40" max="125" step="0.5" placeholder="32">
+            <span class="unit">℃</span>
+            <button class="btn-sm" id="btn-threshold">下发</button>
+          </div>
+          <div class="param">
+            <label for="reg-addr">读取保持寄存器</label>
+            <input type="number" id="reg-addr" value="0" min="0" max="65535" style="width:60px">
+            <input type="number" id="reg-count" value="4" min="1" max="32" style="width:56px">
+            <button class="btn-sm" id="btn-readreg">读取</button>
+          </div>
+          <div style="margin-top:10px;font-size:11.5px;color:var(--muted);font-family:var(--mono);word-break:break-all" id="reg-out">
+            寄存器回读结果会显示在这里
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 历史记录 + 日志 ============ -->
+    <div class="grid wide">
+
+      <!-- 历史记录 -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>历史采集记录</h3>
+          <span class="badge green">SQLite 采集记录表</span>
+          <div class="spacer"></div>
+          <div class="toolbar">
+            <select id="hist-hours">
+              <option value="1">近 1 小时</option>
+              <option value="6">近 6 小时</option>
+              <option value="24" selected>近 24 小时</option>
+              <option value="72">近 3 天</option>
+              <option value="168">近 7 天</option>
+            </select>
+            <button class="btn-sm" id="btn-hist-query">查询</button>
+            <button class="btn-sm" id="btn-hist-export">导出 CSV</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="mini-stats" style="margin-bottom:13px">
+            <div class="mini"><div class="l">平均温度</div><div class="v" id="hs-tavg">--</div></div>
+            <div class="mini"><div class="l">平均湿度</div><div class="v" id="hs-havg">--</div></div>
+            <div class="mini"><div class="l">记录条数</div><div class="v" id="hs-count">0</div></div>
+          </div>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>采集时间</th><th style="text-align:right">温度 (℃)</th><th style="text-align:right">湿度 (%RH)</th></tr>
+              </thead>
+              <tbody id="hist-tbody"></tbody>
+            </table>
+            <div class="empty" id="hist-empty">暂无历史记录</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 日志 -->
+      <div class="panel log-panel" id="panel-log">
+        <div class="panel-head">
+          <h3>系统日志</h3>
+          <span class="badge amber">日志记录表</span>
+          <div class="spacer"></div>
+          <div class="toolbar">
+            <select id="log-filter">
+              <option value="">全部级别</option>
+              <option value="ERROR">ERROR</option>
+              <option value="WARN">WARN</option>
+              <option value="INFO">INFO</option>
+              <option value="DEBUG">DEBUG</option>
+            </select>
+            <button class="btn-sm" id="btn-log-refresh">刷新</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="mini-stats" style="margin-bottom:13px">
+            <div class="mini"><div class="l">日志总数</div><div class="v" id="ls-total">0</div></div>
+            <div class="mini"><div class="l">警告 WARN</div><div class="v" id="ls-warn" style="color:#fcd34d">0</div></div>
+            <div class="mini"><div class="l">错误 ERROR</div><div class="v" id="ls-err" style="color:#fca5a5">0</div></div>
+          </div>
+        </div>
+        <div class="panel-body tight">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>时间</th><th>级别</th><th>模块</th><th>内容</th></tr>
+              </thead>
+              <tbody id="log-tbody"></tbody>
+            </table>
+            <div class="empty" id="log-empty">暂无日志</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      数据链路：ModbusTcp 从机 → 采集进程 → 共享内存 / 消息队列 → Web 服务器 → 网页 ·
+      接口前缀 <code id="api-base-tip">/api</code> ·
+      <span id="foot-mode">—</span>
+    </div>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
