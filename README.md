@@ -227,3 +227,13 @@ HTTP 运行时 27、采集守护进程 11），外加 SHA-256 官方向量校验
 - 日志只落 SQLite 表 + syslog，未做按天轮转与压缩
 - 前端"记住我"、修改密码、用户管理页未实现
 - 密码是明文经 HTTP 传输（教学环境未上 TLS）
+
+## 十一、工程整理与版本管理（2026-09 整理）
+
+- 目录按层归位：源码全在 `src/`（`http/ ipc/ db/ collector/` + `main.c`）、自动化测试在 `tests/`、
+  运行调试工具在 `tools/`、文档在 `docs/`；生成物（`*.out`、`sensor.db*`、`logs/`、`run/`）都列进了 `.gitignore`
+- 一键测试：`make test`（121 项断言全绿，编译 0 warning）；一键起停：`make up` / `make down`
+- **客户机里没有 git、也没有外网**，所以版本历史维护在主机侧的镜像仓库
+  `C:\Users\Lenovo\source\repos\ModbusGateway`：在主机 git-bash 里跑 `bash _sync_from_vm.sh "说明"`
+  就能把客户机最新代码拉下来提交（走 VMware Tools 通道，客户机没网也照样能用）
+- 客户机侧的完整快照统一放在 `~/backups_lianxi/`（各版备份 + `db_backups/` + 回退说明）
