@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主页GET请求示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", system-ui, sans-serif;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 30px;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            background: linear-gradient(90deg,#38bdf8,#a78bfa);
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom:12px;
+        }
+        .sub-title{
+            font-size:1.6rem;
+            color:#cbd5e1;
+            margin-bottom:30px;
+        }
+        img{
+            max-width: 70%;
+            border-radius:14px;
+            box-shadow:0 10px 30px rgba(0,0,0,0.35);
+            border:1px solid rgba(255,255,255,0.08);
+        }
+        .tip{
+            margin-top:24px;
+            color:#94a3b8;
+            font-size:0.95rem;
+        }
+    </style>
+</head>
+<script>
+// 1. 创建XHR对象
+    var xhr = new XMLHttpRequest();
+    var url = "https://jsonplaceholder.typicode.com/todos/1";
+    // 2. 初始化请求
+    xhr.open("GET", url, true);
+    // 3. 绑定状态监听事件
+    xhr.onreadystatechange = function(){
+        if(xhr.readyState === 4 && xhr.status === 200){
+            document.getElementById('res').value = xhr.responseText;
+        }
+    }
+    // 4. 发送请求
+    xhr.send();</script>
+<body>
+    <div class="card">
+        <h1>主页GET请求示例</h1>
+        <div class="sub-title">hello hqyj</div>
+        <img src="hqyj.jpg" alt="hqyj图片">
+        <div class="tip">基于自制Web服务器 thttpd | GET静态资源演示</div>
+        <div style="margin-top:22px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <a href="/app/index.html" style="display:inline-block;padding:12px 26px;border-radius:12px;
+               background:linear-gradient(90deg,#38bdf8,#a78bfa);color:#0b1220;font-weight:700;
+               text-decoration:none;box-shadow:0 8px 24px rgba(56,189,248,.35)">进入 ModbusGateway 数据看板 →</a>
+            <a href="/realtime.html" style="display:inline-block;padding:12px 26px;border-radius:12px;
+               background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#e2e8f0;
+               font-weight:600;text-decoration:none">极简实时监控页</a>
+        </div>
+        <div class="tip" style="margin-top:14px;font-size:.85rem">
+            （看板需要先登录：演示账号 admin / 123456）</div>
+    </div>
+</body>
+</html>

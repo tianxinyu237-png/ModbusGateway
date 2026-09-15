@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实时监控</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; padding: 24px;
+        font-family: "Microsoft Yahei", system-ui, sans-serif;
+        background: #0f172a; color: #e2e8f0;
+        min-height: 100vh;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 18px; color: #c084fc; }
+    .grid { display: flex; flex-wrap: wrap; gap: 14px; }
+    .card {
+        background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+        padding: 16px 20px; min-width: 180px;
+    }
+    .card .label { font-size: 12px; color: #94a3b8; letter-spacing: 1px; }
+    .card .value { font-size: 30px; font-weight: 700; margin-top: 6px; color: #38bdf8; }
+    .card .value span { font-size: 14px; font-weight: 400; color: #94a3b8; margin-left: 4px; }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+    .on  { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    .off { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+    .row { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button {
+        background: #334155; color: #e2e8f0; border: 1px solid #475569;
+        border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 13px;
+    }
+    button:hover { background: #475569; }
+    .hint { font-size: 12px; color: #64748b; }
+    table { margin-top: 20px; border-collapse: collapse; width: 100%; max-width: 720px; font-size: 13px; }
+    th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #334155; }
+    th { color: #94a3b8; font-weight: 500; }
+    a { color: #38bdf8; }
+    #msg { margin-top: 14px; font-size: 13px; color: #fbbf24; min-height: 18px; }
+</style>
+</head>
+<body>
+<h1>温湿度实时监控（thttpd + 共享内存 + 消息队列）</h1>
+
+<div class="grid">
+    <div class="card">
+        <div class="label">温度</div>
+        <div class="value" id="temp">--<span>℃</span></div>
+    </div>
+    <div class="card">
+        <div class="label">湿度</div>
+        <div class="value" id="humi">--<span>%RH</span></div>
+    </div>
+    <div class="card">
+        <div class="label">设备状态</div>
+        <div class="value" id="status" style="font-size:20px"><span class="dot off"></span>未知</div>
+    </div>
+    <div class="card">
+        <div class="label">采集时间</div>
+        <div class="value" id="time" style="font-size:16px;color:#e2e8f0">--</div>
+    </div>
+</div>
+
+<div class="row">
+    <span class="hint">下发采集周期：</span>
+    <button onclick="setIntervalSec(1)">1 秒</button>
+    <button onclick="setIntervalSec(2)">2 秒</button>
+    <button onclick="setIntervalSec(5)">5 秒</button>
+    <button onclick="loadHistory()">刷新历史</button>
+    <span class="hint" id="poll">轮询中…每2秒</span>
+</div>
+<div id="msg"></div>
+
+<table id="hist">
+    <thead><tr><th>#</th><th>温度(℃)</th><th>湿度(%RH)</th><th>状态</th><th>时间(库里为UTC)</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<p style="margin-top:22px"><a href="/index.html">← 返回首页</a> &nbsp; <a href="/post.html">POST求和示例</a></p>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+function show(msg){ $("msg").textContent = msg; setTimeout(function(){ $("msg").textContent=""; }, 3000); }
+
+// 读实时值：采集进程把数据写在共享内存里，web进程直接读，不用惊动数据库
+function poll(){
+    fetch("/api?cmd=realtime")
+        .then(function(r){ return r.text(); })
+        .then(function(t){
+            var d;
+            try { d = JSON.parse(t); }
+            catch(e){ $("poll").textContent = "响应不是JSON: " + t.slice(0,60); return; }
+            if(d.error){
+                $("poll").textContent = "采集进程未运行";
+                $("temp").innerHTML = "--<span>℃</span>";
+                $("humi").innerHTML = "--<span>%RH</span>";
+                $("status").innerHTML = '<span class="dot off"></span>离线';
+                return;
+            }
+            $("poll").textContent = "轮询中…每2秒";
+            $("temp").innerHTML = d.temp.toFixed(1) + "<span>℃</span>";
+            $("humi").innerHTML = d.humi.toFixed(1) + "<span>%RH</span>";
+            var on = (d.status === 1);
+            $("status").innerHTML = '<span class="dot ' + (on?'on':'off') + '"></span>' +
+                                    (d.status===1 ? "在线" : (d.status===0 ? "离线" : "故障"));
+            $("time").textContent = d.time || "--";
+        })
+        .catch(function(e){ $("poll").textContent = "请求失败: " + e; });
+}
+
+// 通过消息队列下发指令，改采集进程的采集周期
+function setIntervalSec(sec){
+    fetch("/api?cmd=interval&sec=" + sec)
+        .then(function(r){ return r.text(); })
+        .then(function(t){
+            var d; try { d = JSON.parse(t); } catch(e){ show("响应: " + t.slice(0,80)); return; }
+            if(d.error) show("下发失败：" + d.error);
+            else show("已下发，采集周期 = " + (d.interval_ms/1000) + " 秒");
+        })
+        .catch(function(e){ show("请求失败: " + e); });
+}
+
+// 查历史：走 sqlite，cJSON 输出
+function loadHistory(){
+    fetch("/api?cmd=history&limit=10")
+        .then(function(r){ return r.text(); })
+        .then(function(t){
+            var rows;
+            try { rows = JSON.parse(t); } catch(e){ show("响应不是JSON: " + t.slice(0,80)); return; }
+            if(rows.error){ show(rows.error); return; }
+            var html = "";
+            rows.forEach(function(r){
+                html += "<tr><td>" + r.temp.toFixed(1) + "</td><td>" + r.humi.toFixed(1) +
+                        "</td><td>" + (r.status===1?"在线":"离线") + "</td><td>" + r.time + "</td></tr>";
+            });
+            $("hist").querySelector("tbody").innerHTML = html || '<tr><td colspan="5">暂无数据</td></tr>';
+        })
+        .catch(function(e){ show("请求失败: " + e); });
+}
+
+poll();
+loadHistory();
+setInterval(poll, 2000);   // 每2秒刷一次实时值
+</script>
+</body>
+</html>

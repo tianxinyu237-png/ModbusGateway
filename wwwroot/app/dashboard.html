@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ModbusGateway · 数据监控看板</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- 模拟模式提示条 -->
+<div class="mock-bar" id="mock-bar" style="display:none">
+  <span>⚠ 模拟数据模式：当前未连接 webserver，数据由浏览器本地生成。</span>
+  <span>对接真实后端请修改 <code>js/config.js</code> 中 <code>MOCK: false</code></span>
+</div>
+
+<!-- 顶栏 -->
+<header class="topbar">
+  <div class="logo"><i></i>ModbusGateway <small>工业物联网数据采集监控平台</small></div>
+  <div class="spacer"></div>
+
+  <div class="top-status">
+    <div class="st"><span class="led" id="led-web"></span>webserver</div>
+    <div class="st"><span class="led" id="led-collect"></span>采集进程</div>
+    <div class="st"><span class="led" id="led-modbus"></span>Modbus 从机</div>
+    <div class="st" id="st-time">--:--:--</div>
+  </div>
+
+  <div class="user-box">
+    <div class="avatar" id="avatar">U</div>
+    <span id="uname">--</span>
+    <button class="btn-ghost" id="btn-logout">退出</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- 数据卡片 -->
+  <section class="kpi-row">
+    <div class="kpi temp">
+      <div class="k-label">当前温度（寄存器 0x0001）</div>
+      <div class="k-value" id="k-temp">--<small>℃</small></div>
+      <div class="k-foot" id="k-temp-foot">等待采集数据…</div>
+    </div>
+    <div class="kpi humi">
+      <div class="k-label">当前湿度（寄存器 0x0002）</div>
+      <div class="k-value" id="k-humi">--<small>%RH</small></div>
+      <div class="k-foot" id="k-humi-foot">等待采集数据…</div>
+    </div>
+    <div class="kpi peak">
+      <div class="k-label">本次运行温度极值</div>
+      <div class="k-value" id="k-peak">-- / --</div>
+      <div class="k-foot">最高 / 最低</div>
+    </div>
+    <div class="kpi count">
+      <div class="k-label">采集点数（已写入 SQLite）</div>
+      <div class="k-value" id="k-count">0</div>
+      <div class="k-foot" id="k-count-foot">采集周期 -- ms</div>
+    </div>
+  </section>
+
+  <div class="grid">
+
+    <!-- 左：图表区 -->
+    <div>
+      <!-- 实时曲线 -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>实时温湿度曲线</h3>
+          <span class="badge">共享内存 · 轮询</span>
+          <div class="spacer"></div>
+          <div class="toolbar">
+            <label>刷新间隔</label>
+            <select id="poll-select">
+              <option value="1000">1 秒</option>
+              <option value="2000" selected>2 秒</option>
+              <option value="5000">5 秒</option>
+            </select>
+            <button class="btn sec" id="btn-pause">暂停</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="chart" id="chart-realtime"></div>
+        </div>
+      </div>
+
+      <!-- 历史查询 -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>历史数据查询</h3>
+          <span class="badge green">SQLite 采集记录表</span>
+          <div class="spacer"></div>
+          <div class="toolbar">
+            <label>时间跨度</label>
+            <select id="hist-range">
+              <option value="1">最近 1 小时</option>
+              <option value="6">最近 6 小时</option>
+              <option value="24" selected>最近 24 小时</option>
+              <option value="72">最近 3 天</option>
+              <option value="168">最近 7 天</option>
+            </select>
+            <button class="btn" id="btn-query">查询</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="chart" id="chart-history"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：状态 + 指令下发 -->
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h3>系统运行状态</h3><span class="badge purple">进程信息</span></div>
+        <div class="panel-body">
+          <div class="info-list">
+            <div class="row"><span class="k">从机地址</span><span class="v" id="i-slave">站号 1</span></div>
+            <div class="row"><span class="k">通信协议</span><span class="v">Modbus TCP</span></div>
+            <div class="row"><span class="k">数据来源</span><span class="v" id="i-source">--</span></div>
+            <div class="row"><span class="k">采集周期</span><span class="v" id="i-period">-- ms</span></div>
+            <div class="row"><span class="k">运行时长</span><span class="v" id="i-uptime">--</span></div>
+            <div class="row"><span class="k">数据通路</span><span class="v">共享内存 + 消息队列</span></div>
+            <div class="row"><span class="k">最近采集时间</span><span class="v" id="i-last">--</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>指令下发</h3><span class="badge orange">消息队列</span></div>
+        <div class="panel-body">
+          <div class="cmd-group">
+            <label>采集周期（ms）</label>
+            <div class="inline">
+              <input type="number" id="cmd-period" value="2000" min="200" step="100">
+              <span class="unit">ms</span>
+            </div>
+          </div>
+          <div class="cmd-group">
+            <label>温度告警阈值（℃）</label>
+            <div class="inline">
+              <input type="number" id="cmd-threshold" value="32" min="0" step="0.5">
+              <span class="unit">℃</span>
+            </div>
+          </div>
+          <div class="cmd-group">
+            <label>读取保持寄存器</label>
+            <div class="inline">
+              <input type="number" id="cmd-addr" value="0" min="0" placeholder="起始地址">
+              <input type="number" id="cmd-count" value="2" min="1" max="125" placeholder="数量">
+            </div>
+          </div>
+          <button class="btn-purple" id="btn-send">下发指令到采集进程</button>
+          <div class="cmd-result" id="cmd-result">指令将通过 webserver 投递到 POSIX 消息队列，由采集进程消费执行。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 日志 -->
+  <div class="panel">
+    <div class="panel-head">
+      <h3>运行日志</h3>
+      <span class="badge">日志记录表 · 按天轮转</span>
+      <div class="spacer"></div>
+      <button class="btn sec" id="btn-refresh-log">刷新</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="log-wrap">
+        <table class="log">
+          <thead>
+            <tr><th style="width:170px">时间</th><th style="width:80px">级别</th><th style="width:110px">模块</th><th>内容</th></tr>
+          </thead>
+          <tbody id="log-body">
+            <tr><td colspan="4" class="empty">暂无日志</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="loading-mask" id="loading">加载中…</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

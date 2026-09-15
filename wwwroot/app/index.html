@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ModbusGateway · 登录 / 注册</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-body">
+
+<div class="auth-wrap">
+
+  <!-- 左：品牌与架构亮点（对应项目流程图） -->
+  <section class="auth-brand">
+    <div class="brand-logo">MG</div>
+    <h1>ModbusGateway</h1>
+    <p class="brand-sub">工业物联网数据采集与监控平台</p>
+
+    <ul class="brand-feature">
+      <li><span>Modbus TCP</span>温湿度传感器周期采集与解析</li>
+      <li><span>epoll</span>多路 IO 复用自研 Web 服务器</li>
+      <li><span>共享内存 + 消息队列</span>多进程解耦通信</li>
+      <li><span>守护进程</span>采集进程后台常驻、异常自愈</li>
+      <li><span>SQLite</span>历史数据持久化与分级日志</li>
+    </ul>
+
+    <div class="brand-flow">
+      浏览器 → HTTP/1.1 → webserver<br>
+      webserver ⇄ 共享内存（实时数据）<br>
+      webserver ⇄ 消息队列（指令下发）<br>
+      采集进程 → Modbus TCP → 从机传感器
+    </div>
+  </section>
+
+  <!-- 右：登录 / 注册表单 -->
+  <section class="auth-panel">
+    <div class="tabs">
+      <button class="tab active" data-tab="login" type="button">登录</button>
+      <button class="tab" data-tab="register" type="button">注册</button>
+    </div>
+
+    <!-- 登录 -->
+    <form id="login-form" class="form active" autocomplete="off">
+      <div class="field">
+        <label for="login-user">用户名</label>
+        <input id="login-user" name="username" type="text" placeholder="请输入用户名" required>
+      </div>
+      <div class="field">
+        <label for="login-pass">密码</label>
+        <input id="login-pass" name="password" type="password" placeholder="请输入密码" required>
+      </div>
+      <button class="btn-primary" type="submit" id="login-btn">登 录</button>
+      <p class="tip info" id="login-tip"></p>
+      <div class="auth-foot">
+        演示账号：<code>admin</code> / <code>123456</code>
+      </div>
+    </form>
+
+    <!-- 注册 -->
+    <form id="register-form" class="form" autocomplete="off">
+      <div class="field">
+        <label for="reg-user">用户名</label>
+        <input id="reg-user" name="username" type="text" placeholder="4 ~ 16 位字母或数字" required>
+      </div>
+      <div class="field">
+        <label for="reg-pass">密码</label>
+        <input id="reg-pass" name="password" type="password" placeholder="至少 6 位" required>
+      </div>
+      <div class="field">
+        <label for="reg-pass2">确认密码</label>
+        <input id="reg-pass2" name="password2" type="password" placeholder="请再次输入密码" required>
+      </div>
+      <button class="btn-primary" type="submit" id="reg-btn">注 册</button>
+      <p class="tip info" id="reg-tip"></p>
+      <div class="auth-foot">
+        注册信息将写入数据库中的<b>用户信息表</b>
+      </div>
+    </form>
+  </section>
+
+</div>
+
+<div class="loading-mask" id="loading">处理中…</div>
+
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>
